@@ -207,11 +207,10 @@ marimo/_lsp/
 __marimo__/
 
 # OPKG Package Build Artifacts
-packages/**/*.ipk
+# Note: .ipk files in packages/ are now committed to git
 packages/**/Packages
 packages/**/Packages.gz
 packages/**/Packages.sig
-*.ipk
 *.deb
 
 # Temporary build directories

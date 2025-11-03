@@ -1,6 +1,0 @@
-#!/bin/sh
-# Pre-removal script for cockpit-example
-
-echo "Removing cockpit-example..."
-
-exit 0

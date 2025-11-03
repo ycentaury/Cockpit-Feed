@@ -1,93 +1,65 @@
-name: Build OPKG Packages
+name: Publish Package Feed
 
 on:
   push:
     branches:
       - main
-      - develop
     paths:
-      - '**-package/**'
-      - 'scripts/**'
+      - 'packages/**/*.ipk'
+      - 'scripts/generate-index.sh'
       - '.github/workflows/build-packages.yml'
-  pull_request:
-    branches:
-      - main
-      - develop
-  release:
-    types: [created, published]
   workflow_dispatch:
-    inputs:
-      architecture:
-        description: 'Target architecture (all, arm, mips, x86_64, or leave empty for all)'
-        required: false
-        default: ''
 
 jobs:
-  build:
-    name: Build Packages
+  generate-indexes:
+    name: Generate Package Indexes
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # Needed for release asset upload
+      contents: write
       actions: read
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
       
-      - name: Set up build environment
+      - name: Set up environment
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            build-essential \
             binutils \
-            gzip \
-            tar
+            gzip
       
-      - name: Display repository structure
+      - name: List packages
         run: |
-          echo "Repository structure:"
-          find . -type d -name "*-package" -o -name "packages"
-      
-      - name: Build all packages
-        run: |
-          echo "Starting package build process..."
-          chmod +x scripts/*.sh
-          ./scripts/build-all.sh
-      
-      - name: List built packages
-        run: |
-          echo "Built packages:"
+          echo "Packages in repository:"
           find packages -name "*.ipk" -type f -ls
-          echo ""
-          echo "Package indexes:"
-          find packages -name "Packages" -o -name "Packages.gz"
       
-      - name: Upload package artifacts
+      - name: Generate package indexes
+        run: |
+          chmod +x scripts/generate-index.sh
+          ./scripts/generate-index.sh
+      
+      - name: Display generated indexes
+        run: |
+          echo "Generated package indexes:"
+          find packages -name "Packages" -o -name "Packages.gz" -type f -ls
+      
+      - name: Upload package feed artifact
         uses: actions/upload-artifact@v4
         with:
-          name: opkg-packages
+          name: opkg-feed
           path: packages/
           retention-days: 90
-      
-      - name: Create release assets (on release)
-        if: github.event_name == 'release'
-        run: |
-          # Create a tarball of all packages
-          tar czf packages.tar.gz packages/
-          
-          # Upload to release
-          gh release upload ${{ github.event.release.tag_name }} packages.tar.gz
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   
   publish-feed:
-    name: Publish Package Feed
+    name: Publish to GitHub Pages
     runs-on: ubuntu-latest
-    needs: build
+    needs: generate-indexes
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: write
-      actions: read
+      pages: write
+      id-token: write
     
     steps:
       - name: Checkout repository
@@ -96,10 +68,10 @@ jobs:
           ref: gh-pages
           fetch-depth: 0
       
-      - name: Download package artifacts
+      - name: Download package feed
         uses: actions/download-artifact@v4
         with:
-          name: opkg-packages
+          name: opkg-feed
           path: packages/
       
       - name: Configure Git
@@ -107,13 +79,13 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
       
-      - name: Commit and push packages
+      - name: Commit and push feed
         run: |
           git add packages/
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "Update package feed [skip ci]"
+            git commit -m "Update package feed indexes [skip ci]"
             git push origin gh-pages
           fi
         continue-on-error: true
@@ -122,5 +94,9 @@ jobs:
         run: |
           REPO_URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           echo "Package feed published at: $REPO_URL/packages/"
-          echo "Add to opkg with:"
+          echo ""
+          echo "Add to opkg configuration:"
           echo "  src/gz cockpit $REPO_URL/packages/all"
+          echo "  src/gz cockpit-arm $REPO_URL/packages/arm"
+          echo "  src/gz cockpit-mips $REPO_URL/packages/mips"
+          echo "  src/gz cockpit-x86_64 $REPO_URL/packages/x86_64"

@@ -4,19 +4,19 @@ Thank you for your interest in contributing to the Cockpit OPKG package feed! Th
 
 ## Ways to Contribute
 
-- **Add new packages** - Submit new Enigma2 plugins
-- **Update existing packages** - Bug fixes and improvements
+- **Add new packages** - Submit pre-built `.ipk` files for new Enigma2 plugins
+- **Update existing packages** - Submit updated versions with bug fixes and improvements
 - **Improve documentation** - Help others understand the project
 - **Report issues** - Let us know about problems
-- **Test packages** - Try packages on different receivers
+- **Test packages** - Try packages on different receivers and report results
 
 ## Getting Started
 
 ### Prerequisites
 
 - Git
-- Basic knowledge of Bash scripting
 - Understanding of OPKG package format
+- Tools to build OPKG packages (opkg-utils or equivalent)
 - Enigma2 receiver for testing (recommended)
 
 ### Fork and Clone
@@ -34,22 +34,19 @@ Thank you for your interest in contributing to the Cockpit OPKG package feed! Th
 
 ## Adding a New Package
 
-### Step 1: Create Package Structure
+### Step 1: Build Your Package Externally
+
+Build your package using standard OPKG tools. See [BUILDING.md](BUILDING.md) for detailed instructions.
+
+Quick example using opkg-build:
 
 ```bash
-# Create package directory (must end with -package)
-mkdir my-plugin-package
-cd my-plugin-package
+# Create package directory structure
+mkdir -p my-plugin/CONTROL
+mkdir -p my-plugin/usr/lib/enigma2/python/Plugins/Extensions/MyPlugin
 
-# Create CONTROL directory
-mkdir CONTROL
-```
-
-### Step 2: Create Control File
-
-Create `CONTROL/control` with package metadata:
-
-```
+# Create control file
+cat > my-plugin/CONTROL/control << 'EOF'
 Package: my-plugin
 Version: 1.0.0
 Architecture: all
@@ -59,12 +56,18 @@ Priority: optional
 Description: One-line description
  Longer description
  spanning multiple lines.
- .
- Paragraph separator for additional info.
 Depends: enigma2
 Source: https://github.com/YourUsername/YourRepo
-Homepage: https://yourwebsite.com
+EOF
+
+# Add your plugin files
+cp -r /path/to/source/* my-plugin/usr/lib/enigma2/python/Plugins/Extensions/MyPlugin/
+
+# Build the package
+opkg-build my-plugin
 ```
+
+This creates `my-plugin_1.0.0_all.ipk`.
 
 **Important:**
 - Use lowercase package name with hyphens
@@ -72,152 +75,109 @@ Homepage: https://yourwebsite.com
 - Specify correct architecture
 - List all dependencies accurately
 
-### Step 3: Add Package Files
+### Step 2: Test Your Package
 
-Add your plugin files in the proper directory structure:
+Test the package on an Enigma2 receiver:
 
 ```bash
-# For Enigma2 plugins
-mkdir -p usr/lib/enigma2/python/Plugins/Extensions/MyPlugin
+# Copy package to device
+scp my-plugin_1.0.0_all.ipk root@receiver:/tmp/
 
-# Copy your plugin files
-cp -r /path/to/source/* usr/lib/enigma2/python/Plugins/Extensions/MyPlugin/
+# SSH to device and install
+ssh root@receiver
+opkg install /tmp/my-plugin_1.0.0_all.ipk
 
-# For configuration files
-mkdir -p etc/mypackage
-cp config.conf etc/mypackage/
+# Test functionality
+# ...
+
+# Remove package
+opkg remove my-plugin
 ```
 
-### Step 4: Add Installation Scripts (Optional)
+### Step 3: Inspect Package Contents
 
-Create installation scripts if needed:
-
-```bash
-# Post-installation script
-cat > CONTROL/postinst << 'EOF'
-#!/bin/sh
-echo "Installing My Plugin..."
-# Add post-installation commands here
-exit 0
-EOF
-
-chmod +x CONTROL/postinst
-```
-
-Available scripts:
-- `preinst` - Before installation
-- `postinst` - After installation
-- `prerm` - Before removal
-- `postrm` - After removal
-
-### Step 5: Test Locally
-
-Build and test your package:
+Verify the package contents are correct:
 
 ```bash
-cd ..
-./scripts/build-package.sh my-plugin-package all
-
-# Check the built package
-ls -lh packages/all/my-plugin_*.ipk
-
-# Inspect package contents
-ar t packages/all/my-plugin_*.ipk
-```
-
-### Step 6: Create Package Documentation
-
-Add a README.md to your package directory:
-
-```bash
-cat > my-plugin-package/README.md << 'EOF'
-# My Plugin
-
-Description of what your plugin does.
-
-## Features
-
-- Feature 1
-- Feature 2
-
-## Installation
-
-```bash
-opkg install my-plugin
-```
-
-## Configuration
-
-Explain how to configure the plugin.
-
-## Usage
-
-Explain how to use the plugin.
-
-## License
-
-Specify the license.
-EOF
+# Extract and inspect
+ar x my-plugin_1.0.0_all.ipk
+tar xzf control.tar.gz
+cat control
+tar xzf data.tar.gz
+ls -la
 ```
 
 ## Submitting Your Contribution
 
 ### Before Submitting
 
-1. **Test thoroughly**
-   - Build the package successfully
-   - Test installation on a receiver (if possible)
+1. **Build your package** using standard OPKG tools
+2. **Test thoroughly**
+   - Test installation on a receiver (required)
    - Verify all dependencies are listed
    - Check file permissions
-
-2. **Follow code style**
-   - Use consistent formatting
-   - Add comments where needed
-   - Follow existing patterns
-
-3. **Update documentation**
-   - Add package README
-   - Update main README if needed
-   - Document any special requirements
+   - Ensure the package works as expected
+3. **Verify package quality**
+   - Package follows naming conventions
+   - Version number is correct
+   - Control file has all required fields
+   - Package size is reasonable
 
 ### Create Pull Request
 
-1. **Create a branch**
+1. **Fork and clone the repository**
+   ```bash
+   git clone https://github.com/YOUR-USERNAME/Cockpit.git
+   cd Cockpit
+   ```
+
+2. **Create a branch**
    ```bash
    git checkout -b add-my-plugin
    ```
 
-2. **Commit your changes**
+3. **Add your pre-built .ipk file**
    ```bash
-   git add my-plugin-package/
-   git commit -m "Add my-plugin package
+   # Copy to the appropriate architecture directory
+   cp /path/to/my-plugin_1.0.0_all.ipk packages/all/
+   
+   # Or for specific architecture
+   cp /path/to/my-plugin_1.0.0_arm.ipk packages/arm/
+   ```
+
+4. **Commit your changes**
+   ```bash
+   git add packages/
+   git commit -m "Add my-plugin package v1.0.0
 
    - Brief description of the plugin
    - Key features
-   - Target architecture"
+   - Target architecture: all
+   - Tested on: [your receiver model]"
    ```
 
-3. **Push to your fork**
+5. **Push to your fork**
    ```bash
    git push origin add-my-plugin
    ```
 
-4. **Open Pull Request**
+6. **Open Pull Request**
    - Go to GitHub and create a pull request
-   - Fill in the PR template
    - Explain what your package does
-   - Mention any testing performed
+   - Mention testing performed
+   - List any special requirements or dependencies
 
 ### Pull Request Guidelines
 
-- **Title**: Clear and descriptive (e.g., "Add my-plugin package")
+- **Title**: Clear and descriptive (e.g., "Add my-plugin package v1.0.0")
 - **Description**: 
   - What the package does
   - Why it's useful
-  - Any special considerations
-  - Testing performed
-- **One package per PR**: Don't mix multiple packages
-- **Follow conventions**: Match existing structure
+  - Testing performed (receiver model, architecture)
+  - Any special considerations or dependencies
+- **One package per PR**: Submit separate PRs for different packages
+- **Pre-built only**: Only submit `.ipk` files, not source directories
+- **Package quality**: Ensure package is properly built and tested
 
 ## Package Guidelines
 
@@ -273,66 +233,79 @@ Set appropriate permissions:
 - Scripts in CONTROL: `755`
 - Directories: `755`
 
-## Code Review Process
+## Review Process
 
 After submitting a PR:
 
-1. **Automated checks**: GitHub Actions will build your package
-2. **Maintainer review**: A maintainer will review your code
+1. **Automated checks**: GitHub Actions will validate your submission
+2. **Maintainer review**: A maintainer will review your package
 3. **Feedback**: Address any requested changes
 4. **Approval**: Once approved, your PR will be merged
-5. **Publication**: Package becomes available in the feed
+5. **Publication**: Package indexes are automatically generated and the package becomes available in the feed
 
 ## Testing Guidelines
 
-### Local Testing
+### Required Testing
 
-```bash
-# Build package
-./scripts/build-package.sh my-plugin-package all
-
-# Inspect contents
-mkdir /tmp/test-package
-cd /tmp/test-package
-ar x /path/to/package.ipk
-tar xzf control.tar.gz
-tar xzf data.tar.gz
-
-# Verify files are in correct locations
-ls -la
-```
-
-### On-Device Testing
-
-If you have access to an Enigma2 receiver:
+Before submitting, you **must** test your package on an actual Enigma2 receiver:
 
 ```bash
 # Copy package to receiver
-scp packages/all/my-plugin_*.ipk root@receiver:/tmp/
+scp my-plugin_1.0.0_all.ipk root@receiver:/tmp/
 
 # SSH to receiver
 ssh root@receiver
 
 # Install package
-opkg install /tmp/my-plugin_*.ipk
+opkg install /tmp/my-plugin_1.0.0_all.ipk
 
-# Test functionality
-# ...
+# Test functionality thoroughly
+# - Verify plugin appears in menu
+# - Test all features
+# - Check for errors in logs
+# - Verify removal works correctly
 
 # Remove package
 opkg remove my-plugin
 ```
 
+### Package Inspection
+
+Verify package contents before submission:
+
+```bash
+# Inspect contents
+mkdir /tmp/test-package
+cd /tmp/test-package
+ar x /path/to/my-plugin_1.0.0_all.ipk
+tar xzf control.tar.gz
+cat control
+
+tar xzf data.tar.gz
+tree .  # or ls -laR
+
+# Verify:
+# - All files are in correct locations
+# - No unnecessary files included
+# - Permissions are correct
+```
+
 ## Common Issues
 
-### Build Fails
+### Package Build Issues
 
-**Problem**: Script can't find CONTROL/control
+**Problem**: opkg-build not found
 
 **Solution**: 
-- Ensure directory name ends with `-package`
-- Check control file exists and is named correctly (lowercase)
-- Verify file permissions
+- Install opkg-utils: `sudo apt-get install opkg-utils`
+- Or follow manual build instructions in [BUILDING.md](BUILDING.md)
+
+**Problem**: Control file format errors
+
+**Solution**: 
+- Check control file has all required fields
+- Ensure proper formatting (no extra spaces)
+- Use existing packages as reference
 
 ### Package Won't Install
 
@@ -340,24 +313,23 @@ opkg remove my-plugin
 
 **Solution**:
 - List all required packages in `Depends:`
-- Test on a receiver with minimal packages
-- Check package names are correct
+- Test on a receiver with base system
+- Check dependency package names are correct
+- Verify dependencies are available in OPKG feeds
 
-### Files in Wrong Location
-
-**Problem**: Files not appearing after installation
+**Problem**: Files in wrong location
 
 **Solution**:
 - Check directory structure matches Enigma2 expectations
-- Verify paths are relative (no leading slash)
-- Use `opkg files <package>` to see where files go
+- Verify paths are relative (no leading slash in package directory structure)
+- Use `opkg files <package>` to see where files were installed
 
 ## Getting Help
 
 - **Documentation**: Read [BUILDING.md](BUILDING.md) and [USAGE.md](USAGE.md)
 - **Issues**: Open an issue on GitHub
 - **Discussions**: Use GitHub Discussions for questions
-- **Examples**: Look at `example-package` for reference
+- **Examples**: Examine existing `.ipk` files in the `packages/` directories
 
 ## Code of Conduct
 
