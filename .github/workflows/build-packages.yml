@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'packages/**/*.ipk'
+      - 'packages/*/*.ipk'
       - 'scripts/generate-index.sh'
       - '.github/workflows/build-packages.yml'
   workflow_dispatch:
