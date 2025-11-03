@@ -2,18 +2,17 @@
 
 OPKG Package Feed for Cockpit series OA Enigma2 plugins
 
-[![Build OPKG Packages](https://github.com/CodeIsUs/Cockpit/actions/workflows/build-packages.yml/badge.svg)](https://github.com/CodeIsUs/Cockpit/actions/workflows/build-packages.yml)
+[![Publish Package Feed](https://github.com/CodeIsUs/Cockpit/actions/workflows/build-packages.yml/badge.svg)](https://github.com/CodeIsUs/Cockpit/actions/workflows/build-packages.yml)
 
 ## Overview
 
-This repository provides an automated OPKG package feed for Enigma2 receiver plugins. It includes:
+This repository provides an OPKG package feed for Enigma2 receiver plugins. It includes:
 
 - ✅ Proper OPKG package feed structure
-- ✅ Automated build process for `.ipk` packages
-- ✅ GitHub Actions CI/CD integration
+- ✅ Pre-built `.ipk` packages
+- ✅ GitHub Actions for package index generation
 - ✅ Multi-architecture support (ARM, MIPS, x86_64)
-- ✅ Automatic package index generation
-- ✅ Example package template
+- ✅ Automatic package index generation and publishing
 
 ## Quick Start
 
@@ -34,91 +33,72 @@ opkg install cockpit-example
 
 See [USAGE.md](USAGE.md) for detailed instructions.
 
-### For Developers
+### For Contributors
 
-Build packages locally:
+To contribute packages to this feed:
 
 ```bash
 # Clone the repository
 git clone https://github.com/CodeIsUs/Cockpit.git
 cd Cockpit
 
-# Build all packages
-./scripts/build-all.sh
+# Add your pre-built .ipk file to the appropriate architecture directory
+cp /path/to/your-package.ipk packages/all/
 
-# Or build a specific package
-./scripts/build-package.sh example-package all
+# Commit and submit a pull request
 ```
 
-See [BUILDING.md](BUILDING.md) for comprehensive building instructions.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution guidelines.
 
 ## Package Feed Structure
 
 ```
 Cockpit/
-├── packages/              # Built packages (generated)
+├── packages/              # Pre-built packages
 │   ├── all/              # Architecture-independent packages
+│   │   └── *.ipk         # Package files (committed)
 │   ├── arm/              # ARM packages
+│   │   └── *.ipk         # Package files (committed)
 │   ├── mips/             # MIPS packages
+│   │   └── *.ipk         # Package files (committed)
 │   └── x86_64/           # x86_64 packages
-├── scripts/              # Build scripts
-│   ├── build-package.sh  # Build individual package
-│   ├── build-all.sh      # Build all packages
+│       └── *.ipk         # Package files (committed)
+├── scripts/              # Utility scripts
 │   └── generate-index.sh # Generate package indexes
-├── example-package/      # Example package template
-│   ├── CONTROL/          # Package metadata
-│   └── usr/              # Package files
 └── .github/
     └── workflows/
-        └── build-packages.yml  # CI/CD workflow
+        └── build-packages.yml  # Package index generation workflow
 ```
 
-## Creating New Packages
+## Adding Packages
 
-1. **Copy the example package:**
+To add a package to this feed:
+
+1. **Build your package externally** using standard OPKG tools:
    ```bash
-   cp -r example-package my-plugin-package
+   # Build your package using opkg-build or similar tools
+   opkg-build my-plugin-directory
    ```
 
-2. **Update the control file:**
+2. **Copy the .ipk file** to the appropriate architecture directory:
    ```bash
-   vi my-plugin-package/CONTROL/control
-   ```
-   
-   Update package name, version, description, and dependencies.
-
-3. **Add your plugin files:**
-   ```bash
-   # Add files in proper Enigma2 directory structure
-   mkdir -p my-plugin-package/usr/lib/enigma2/python/Plugins/Extensions/MyPlugin
-   cp -r /path/to/source/* my-plugin-package/usr/lib/enigma2/python/Plugins/Extensions/MyPlugin/
+   cp my-plugin_1.0.0_all.ipk packages/all/
    ```
 
-4. **Build the package:**
-   ```bash
-   ./scripts/build-package.sh my-plugin-package all
-   ```
+3. **Submit a pull request** with your package.
 
-5. **Test installation:**
-   ```bash
-   opkg install packages/all/my-plugin_*.ipk
-   ```
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines on preparing and submitting packages.
 
-See the [example-package README](example-package/README.md) for detailed package structure.
+## Automated Package Index Generation
 
-## Automated Builds
+Package indexes are automatically generated via GitHub Actions when:
 
-Packages are automatically built via GitHub Actions when:
-
-- Code is pushed to `main` or `develop` branches
-- Pull requests are created
-- New releases are published
+- `.ipk` files are pushed to the `main` branch
 - Manually triggered via Actions tab
 
-Built packages are:
-- Available as workflow artifacts (90 days retention)
-- Attached to GitHub releases
-- Published to GitHub Pages (optional)
+Generated indexes are:
+- Published to GitHub Pages for the OPKG feed
+- Available for immediate use by receivers
 
 ## Architecture Support
 
@@ -134,18 +114,9 @@ Specify architecture in the package's `CONTROL/control` file.
 ## Documentation
 
 - **[USAGE.md](USAGE.md)** - How to use the package feed on your receiver
-- **[BUILDING.md](BUILDING.md)** - How to build packages manually
-- **[example-package/README.md](example-package/README.md)** - Package structure reference
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - How to contribute packages to this feed
 
 ## Requirements
-
-### For Building Packages
-
-- bash
-- tar
-- gzip
-- ar (optional, from binutils)
-- opkg-utils (optional, for better compatibility)
 
 ### For Installing Packages
 
@@ -156,12 +127,11 @@ Specify architecture in the package's `CONTROL/control` file.
 ## Contributing
 
 1. Fork the repository
-2. Create a new package directory (must end with `-package`)
-3. Add your package files and CONTROL metadata
-4. Test the build locally
-5. Submit a pull request
+2. Build your package externally using standard OPKG tools
+3. Add your pre-built `.ipk` file to the appropriate architecture directory
+4. Submit a pull request
 
-All pull requests trigger automatic package builds for validation.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution guidelines.
 
 ## Package Signing
 
@@ -183,12 +153,6 @@ option check_signature 1
 
 ## Troubleshooting
 
-### Build Issues
-
-- Ensure scripts are executable: `chmod +x scripts/*.sh`
-- Check package has valid `CONTROL/control` file
-- Verify directory name ends with `-package`
-
 ### Installation Issues
 
 - Update package list: `opkg update`
@@ -196,7 +160,7 @@ option check_signature 1
 - Verify architecture matches receiver
 - Check available disk space: `df -h`
 
-See documentation for detailed troubleshooting.
+See [USAGE.md](USAGE.md) for detailed troubleshooting.
 
 ## License
 
