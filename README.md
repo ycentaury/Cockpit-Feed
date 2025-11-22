@@ -8,7 +8,7 @@
 To install the feed enter the following command in the box console:
 
 ```
-echo "src/gz cockpit-all https://ycentaury.github.io/Cockpit-Feed/packages/all > /etc/opkg/cockpit-feed.conf"
+echo "src/gz cockpit-all https://xcentaurix.github.io/Cockpit-Feed/packages/all" > /etc/opkg/cockpit-feed.conf
 ```
 
 ## Links
